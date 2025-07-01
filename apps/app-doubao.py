@@ -6,24 +6,31 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 # API Configurations
-API_ENDPOINT_1 = 'http://ssb.org.cn:10035/v1'
-API_KEY_1 = 'UgC44uW-z-fLNadND-fL81yBXYG3B2T9fIWHFuEnWAA'
+API_ENDPOINT_1 = 'https://api.doubao.com/v1'  # 豆包API端点
+API_KEY_1 = 'xxxx'  # 豆包API密钥
+API_ENDPOINT_2 = API_ENDPOINT_1 
+API_KEY_2 = 'xxxx'  # 可以使用不同的API密钥
 
-API_ENDPOINT_2 = 'http://ssb.org.cn:10099/v1'
-API_KEY_2 = 'UgC44uW-z-fLNadND-fL81yBXYG3B2T9fIWHFuEnWAA'
-
-# Initialize OpenAI clients
+# Initialize OpenAI-compatible clients
 client1 = OpenAI(
     base_url=API_ENDPOINT_1,
-    api_key=API_KEY_1
+    api_key=API_KEY_1,
+    default_headers={
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+    }
 )
 
 client2 = OpenAI(
     base_url=API_ENDPOINT_2,
-    api_key=API_KEY_2
+    api_key=API_KEY_2,
+    default_headers={
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+    }
 )
 
-@app.route('/bingte')
+@app.route('/')
 def index():
     return render_template('index.html')
 
@@ -36,9 +43,17 @@ def generate():
     def generate_stream():
         try:
             completion = client1.chat.completions.create(
-                model="Claude-3.5-Sonnet",
-                messages=[{"role": "user", "content": prompt}],
-                stream=True
+                model="doubao-text-v1",  # 豆包模型名称
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }],
+                stream=True,
+                temperature=0.7,
+                top_p=0.95,
+                frequency_penalty=0,
+                presence_penalty=0,
+                max_tokens=4096
             )
             
             app.logger.debug("Stream created successfully for gen")
@@ -63,9 +78,17 @@ def generate2():
     def generate_stream():
         try:
             completion = client2.chat.completions.create(
-                model="Qwen2.5-72B-I-128K",
-                messages=[{"role": "user", "content": prompt}],
-                stream=True
+                model="doubao-text-v1",  # 可以使用不同的模型版本
+                messages=[{
+                    "role": "user",
+                    "content": prompt
+                }],
+                stream=True,
+                temperature=0.8,  # 可以调整参数
+                top_p=0.95,
+                frequency_penalty=0,
+                presence_penalty=0,
+                max_tokens=4096
             )
             
             app.logger.debug("Stream created successfully for gen2")
@@ -82,4 +105,4 @@ def generate2():
     return Response(generate_stream(), mimetype='text/plain')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=60001, host="0.0.0.0")
+    app.run(debug=True, port=60000, host="0.0.0.0")
